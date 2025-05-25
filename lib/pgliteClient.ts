@@ -11,26 +11,27 @@ export async function getDB() {
 
     await db.exec(`
         CREATE TABLE IF NOT EXISTS doctors (
-            id TEXT PRIMARY KEY NOT NULL AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
+            name TEXT,
+            age INTEGER,
+            specialization TEXT,
+            notes TEXT,
+            phone TEXT
+        );
+
+    CREATE TABLE IF NOT EXISTS patients (
+            id SERIAL PRIMARY KEY,
             name TEXT,
             age INTEGER,
             condition TEXT,
             notes TEXT,
             phone TEXT
-    );
-
-    CREATE TABLE IF NOT EXISTS patients (
-            id TEXT PRIMARY KEY NOT NULL AUTOINCREMENT,
-            name TEXT,
-            age INTEGER,
-            specialization TEXT,
-            notes TEXT
-    );
+        );
 
     CREATE TABLE IF NOT EXISTS appointments (
-            id TEXT PRIMARY KEY NOT NULL AUTOINCREMENT,
-            doctor_id TEXT,
-            patient_id TEXT,
+            id SERIAL PRIMARY KEY,
+            doctor_id INTEGER,
+            patient_id INTEGER,
             date TEXT,
             time TEXT,
             FOREIGN KEY(doctor_id) REFERENCES doctors(id),

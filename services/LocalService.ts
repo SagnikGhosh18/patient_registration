@@ -3,30 +3,31 @@ import { getDB } from '@/lib/pgliteClient';
 export async function addDoctor(data: any) {
     try {
         const db = await getDB();
-        const { name, age, condition, notes, phone } = data;
-        await db.exec(
-            `INSERT INTO doctors (name, age, condition, notes, phone)
-        VALUES (${name}, ${age}, ${condition}, ${notes}, ${phone})`,
+        const { name, age, specialization, notes, phone } = data;
+        await db.query(
+            `INSERT INTO doctors (name, age, specialization, notes, phone) VALUES ($1, $2, $3, $4, $5)`,
+            [name, age, specialization, notes, phone],
         );
         return true;
     } catch (err) {
         console.log('ADD_DOCTOR: Something went wrong: %o', err);
-        return false;
+        throw new Error('Failed to add doctor');
     }
 }
 
 export async function addPatient(data: any) {
     try {
         const db = await getDB();
-        const { name, age, specialization, notes } = data;
-        await db.exec(
-            `INSERT INTO patients (name, age, specialization, notes)
-        VALUES (${name}, ${age}, ${specialization}, ${notes})`,
+        const { name, age, condition, notes, phone } = data;
+        await db.query(
+            `INSERT INTO patients (name, age, condition, notes, phone)
+        VALUES ($1, $2, $3, $4, $5)`,
+            [name, age, condition, notes, phone],
         );
         return true;
     } catch (err) {
         console.log('ADD_PATIENT: Something went wrong: %o', err);
-        return false;
+        throw new Error('Failed to add patient');
     }
 }
 
@@ -34,13 +35,15 @@ export async function scheduleAppointment(data: any) {
     try {
         const db = await getDB();
         const { doctorId, patientId, date, time } = data;
-        const query = `INSERT INTO appointments (doctor_id, patient_id, date, time)
-        VALUES (${doctorId}, ${patientId}, ${date}, ${time})`;
-        await db.exec(query);
+        await db.query(
+            `INSERT INTO appointments (doctor_id, patient_id, date, time)
+        VALUES ($1, $2, $3, $4)`,
+            [doctorId, patientId, date, time],
+        );
         return true;
     } catch (err) {
         console.log('SCHEDULE_APPOINTMENT: Something went wrong: %o', err);
-        return false;
+        throw new Error('Failed to schedule appointment');
     }
 }
 
@@ -51,7 +54,7 @@ export async function getDoctors() {
         return queryResult.rows;
     } catch (err) {
         console.log('GET_DOCTORS: Something went wrong: %o', err);
-        return [];
+        throw new Error('Failed to get doctors');
     }
 }
 
@@ -62,7 +65,7 @@ export async function getPatients() {
         return queryResult.rows;
     } catch (err) {
         console.log('GET_PATIENTS: Something went wrong: %o', err);
-        return [];
+        throw new Error('Failed to get patients');
     }
 }
 
@@ -78,6 +81,6 @@ export async function getAppointments() {
         return queryResult.rows;
     } catch (err) {
         console.log('GET_APPOINTMENTS: Something went wrong: %o', err);
-        return [];
+        throw new Error('Failed to get appointments');
     }
 }
