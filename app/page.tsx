@@ -65,9 +65,9 @@ export default function Home() {
     }, []);
 
     return (
-        <div className="container mx-auto py-10">
-            <div className="flex flex-row flex-1 w-full gap-8">
-                <Card className="max-w-4xl mx-auto flex-1/2">
+        <div className="container mx-auto py-10 w-full">
+            <div className="flex flex-row w-full gap-8">
+                <Card className="w-1/2">
                     <CardHeader>
                         <CardTitle>Available Doctors</CardTitle>
                     </CardHeader>

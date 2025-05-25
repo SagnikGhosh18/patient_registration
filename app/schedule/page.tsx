@@ -1,7 +1,297 @@
+'use client';
+import { scheduleAppointment, getAppointments } from '@/services/LocalService';
+import { getDoctors, getPatients } from '@/services/LocalService';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { cn } from '@/lib/utils';
+
+interface AppointmentFormData {
+    patientId: number;
+    doctorId: number;
+    appointmentDate: string;
+    appointmentTime: string;
+}
+
 export default function SchedulePage() {
+    const [doctors, setDoctors] = useState<any[]>([]);
+    const [patients, setPatients] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+    const [appointments, setAppointments] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchAllData = async () => {
+            try {
+                const [doctorsData, patientsData, appointmentsData] = await Promise.all([
+                    getDoctors(),
+                    getPatients(),
+                    getAppointments(),
+                ]);
+                setDoctors(doctorsData);
+                setPatients(patientsData);
+                setAppointments(appointmentsData);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchAllData();
+    }, []);
+
+    const {
+        handleSubmit,
+        formState: { errors },
+        reset,
+        setValue,
+        watch,
+    } = useForm<AppointmentFormData>();
+
+    const onSubmit = async (data: AppointmentFormData) => {
+        try {
+            await scheduleAppointment({
+                doctorId: data.doctorId,
+                patientId: data.patientId,
+                date: selectedDate?.toISOString() || new Date().toISOString(),
+                time: data.appointmentTime,
+            });
+            reset();
+            setSelectedDate(undefined);
+            console.log('Appointment created successfully');
+        } catch (error) {
+            console.error('Failed to create appointment:', error);
+        }
+    };
+
     return (
-        <div>
-            <h1>Schedule</h1>
+        <div className="container mx-auto py-10">
+            <div className="space-y-8">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Schedule Appointment</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label
+                                        htmlFor="patientId"
+                                        className="block text-sm font-medium"
+                                    >
+                                        Select Patient
+                                    </label>
+                                    <Select
+                                        onValueChange={(value) =>
+                                            setValue('patientId', parseInt(value))
+                                        }
+                                        defaultValue={watch('patientId')?.toString()}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a patient" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {patients.map((patient) => (
+                                                <SelectItem
+                                                    key={patient.id}
+                                                    value={patient.id.toString()}
+                                                >
+                                                    {patient.name} ({patient.age} years)
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.patientId && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {errors.patientId.message}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label htmlFor="doctorId" className="block text-sm font-medium">
+                                        Select Doctor
+                                    </label>
+                                    <Select
+                                        onValueChange={(value) =>
+                                            setValue('doctorId', parseInt(value))
+                                        }
+                                        defaultValue={watch('doctorId')?.toString()}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a doctor" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {doctors.map((doctor) => (
+                                                <SelectItem
+                                                    key={doctor.id}
+                                                    value={doctor.id.toString()}
+                                                >
+                                                    {doctor.name} ({doctor.specialization})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.doctorId && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {errors.doctorId.message}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="col-span-2">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label
+                                                htmlFor="appointmentDate"
+                                                className="block text-sm font-medium"
+                                            >
+                                                Appointment Date
+                                            </label>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button
+                                                        variant={'outline'}
+                                                        className={cn(
+                                                            'w-full justify-start text-left font-normal',
+                                                            !selectedDate &&
+                                                                'text-muted-foreground',
+                                                        )}
+                                                    >
+                                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                                        {selectedDate ? (
+                                                            format(selectedDate, 'PPP')
+                                                        ) : (
+                                                            <span>Pick a date</span>
+                                                        )}
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent
+                                                    className="w-auto p-0"
+                                                    align="start"
+                                                >
+                                                    <Calendar
+                                                        mode="single"
+                                                        selected={selectedDate}
+                                                        onSelect={setSelectedDate}
+                                                        initialFocus
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
+                                        </div>
+
+                                        <div>
+                                            <label
+                                                htmlFor="appointmentTime"
+                                                className="block text-sm font-medium"
+                                            >
+                                                Appointment Time
+                                            </label>
+                                            <Select
+                                                onValueChange={(value) =>
+                                                    setValue('appointmentTime', value)
+                                                }
+                                                defaultValue={watch('appointmentTime')}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select time" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {[9, 10, 11, 12, 13, 14, 15, 16, 17].map(
+                                                        (hour) => (
+                                                            <SelectItem
+                                                                key={hour}
+                                                                value={`${hour}:00`}
+                                                            >
+                                                                {hour}:00
+                                                            </SelectItem>
+                                                        ),
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                            {errors.appointmentTime && (
+                                                <p className="mt-1 text-sm text-red-600">
+                                                    {errors.appointmentTime.message}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="col-span-2">
+                                    <Button type="submit" className="w-full" disabled={loading}>
+                                        {loading ? 'Creating...' : 'Create Appointment'}
+                                    </Button>
+                                </div>
+                            </div>
+                        </form>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Appointments</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Patient</TableHead>
+                                        <TableHead>Doctor</TableHead>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Time</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {appointments.map((appointment) => (
+                                        <TableRow key={appointment.id}>
+                                            <TableCell>
+                                                {
+                                                    patients.find(
+                                                        (p) => p.id === appointment.patient_id,
+                                                    )?.name
+                                                }
+                                            </TableCell>
+                                            <TableCell>
+                                                {
+                                                    doctors.find(
+                                                        (d) => d.id === appointment.doctor_id,
+                                                    )?.name
+                                                }
+                                            </TableCell>
+                                            <TableCell>
+                                                {new Date(appointment.date).toLocaleDateString()}
+                                            </TableCell>
+                                            <TableCell>{appointment.time}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }

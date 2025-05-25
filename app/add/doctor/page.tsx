@@ -6,13 +6,31 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { addDoctor } from '@/services/LocalService';
+import { addDoctor, getDoctors } from '@/services/LocalService';
+import { useEffect, useState } from 'react';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 interface DoctorFormData {
     name: string;
     age: number;
     specialization: string;
     notes: string;
     phoneNumber: string;
+}
+
+interface Doctor {
+    id: number;
+    name: string;
+    age: number;
+    specialization: string;
+    phone: string;
+    notes: string;
 }
 
 export default function AddDoctorPage() {
@@ -22,6 +40,24 @@ export default function AddDoctorPage() {
         reset,
         formState: { errors },
     } = useForm<DoctorFormData>();
+    const [doctors, setDoctors] = useState<Doctor[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+
+    const fetchDoctors = async () => {
+        try {
+            setLoading(true);
+            const data = await getDoctors();
+            setDoctors(data as Doctor[]);
+        } catch (error) {
+            console.error('Error fetching doctors:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDoctors();
+    }, []);
 
     const onSubmit = async (data: DoctorFormData) => {
         try {
@@ -34,19 +70,21 @@ export default function AddDoctorPage() {
     };
 
     return (
-        <div className="container mx-auto py-10">
-            <Card className="w-2xl mx-auto">
+        <div className="container flex flex-col mx-auto py-10 gap-12 max-h-[100%]">
+            <Card className="w-full">
                 <CardHeader>
                     <CardTitle>Add Doctor</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                        <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <div className="mb-2">Name</div>
+                                <label htmlFor="name" className="block text-sm font-medium">
+                                    Name
+                                </label>
                                 <Input
                                     id="name"
-                                    placeholder="Enter doctor's name"
+                                    placeholder="Enter doctor name"
                                     {...register('name', {
                                         required: 'Name is required',
                                         minLength: {
@@ -56,14 +94,16 @@ export default function AddDoctorPage() {
                                     })}
                                 />
                                 {errors.name && (
-                                    <p className="text-sm text-destructive mt-1">
+                                    <p className="mt-1 text-sm text-red-600">
                                         {errors.name.message}
                                     </p>
                                 )}
                             </div>
 
                             <div>
-                                <div className="mb-2">Age</div>
+                                <label htmlFor="age" className="block text-sm font-medium">
+                                    Age
+                                </label>
                                 <Input
                                     id="age"
                                     type="number"
@@ -78,14 +118,19 @@ export default function AddDoctorPage() {
                                     })}
                                 />
                                 {errors.age && (
-                                    <p className="text-sm text-destructive mt-1">
+                                    <p className="mt-1 text-sm text-red-600">
                                         {errors.age.message}
                                     </p>
                                 )}
                             </div>
 
                             <div>
-                                <div className="mb-2">Specialization</div>
+                                <label
+                                    htmlFor="specialization"
+                                    className="block text-sm font-medium"
+                                >
+                                    Specialization
+                                </label>
                                 <Input
                                     id="specialization"
                                     placeholder="Enter specialization"
@@ -94,14 +139,16 @@ export default function AddDoctorPage() {
                                     })}
                                 />
                                 {errors.specialization && (
-                                    <p className="text-sm text-destructive mt-1">
+                                    <p className="mt-1 text-sm text-red-600">
                                         {errors.specialization.message}
                                     </p>
                                 )}
                             </div>
 
                             <div>
-                                <div className="mb-2">Phone Number</div>
+                                <label htmlFor="phoneNumber" className="block text-sm font-medium">
+                                    Phone Number
+                                </label>
                                 <Input
                                     id="phoneNumber"
                                     placeholder="Enter phone number"
@@ -114,17 +161,18 @@ export default function AddDoctorPage() {
                                     })}
                                 />
                                 {errors.phoneNumber && (
-                                    <p className="text-sm text-destructive mt-1">
+                                    <p className="mt-1 text-sm text-red-600">
                                         {errors.phoneNumber.message}
                                     </p>
                                 )}
                             </div>
-
-                            <div>
-                                <div className="mb-2">Additional Notes</div>
+                            <div className="col-span-2">
+                                <label htmlFor="notes" className="block text-sm font-medium">
+                                    Additional Notes
+                                </label>
                                 <Textarea
                                     id="notes"
-                                    placeholder="Enter any additional notes about the doctor"
+                                    placeholder="Enter any additional notes..."
                                     {...register('notes')}
                                 />
                             </div>
@@ -134,6 +182,52 @@ export default function AddDoctorPage() {
                             Add Doctor
                         </Button>
                     </form>
+                </CardContent>
+            </Card>
+
+            <Card className="w-full">
+                <CardHeader>
+                    <CardTitle>Available Doctors</CardTitle>
+                </CardHeader>
+                <CardContent className="h-[50%]">
+                    <div className="rounded-md border h-full overflow-auto">
+                        {loading ? (
+                            <div className="flex justify-center items-center h-64">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            </div>
+                        ) : (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Age</TableHead>
+                                        <TableHead>Specialization</TableHead>
+                                        <TableHead>Phone</TableHead>
+                                        <TableHead>Notes</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {doctors.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="h-24 text-center">
+                                                No doctors available
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        doctors.map((doctor) => (
+                                            <TableRow key={doctor.id}>
+                                                <TableCell>{doctor.name}</TableCell>
+                                                <TableCell>{doctor.age}</TableCell>
+                                                <TableCell>{doctor.specialization}</TableCell>
+                                                <TableCell>{doctor.phone || '-'}</TableCell>
+                                                <TableCell>{doctor.notes || '-'}</TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        )}
+                    </div>
                 </CardContent>
             </Card>
         </div>
