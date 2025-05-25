@@ -32,11 +32,11 @@ const items = [
         url: '/schedule',
         icon: Calendar,
     },
-    {
-        title: 'Settings',
-        url: '/settings',
-        icon: Settings,
-    },
+    // {
+    //     title: 'Settings',
+    //     url: '/settings',
+    //     icon: Settings,
+    // },
 ];
 
 export function AppSidebar() {
@@ -45,9 +45,7 @@ export function AppSidebar() {
             <SidebarContent>
                 <SidebarGroup>
                     <SidebarGroupLabel>
-                        <h1 className="text-lg font-semibold">
-
-                        </h1>
+                        <h1 className="text-lg font-semibold">Patient Registration</h1>
                     </SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
