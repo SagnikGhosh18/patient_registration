@@ -6,10 +6,19 @@ import {
     getCurrentAppointmentsCount,
     getUpcomingWeekAppointments,
     getCompletedAppointmentsLastMonth,
+    getNextMonthAppointments,
+    getTodaysAppointments,
 } from '@/services/LocalService';
 import { broadcastChannel } from '@/lib/broadcastChannel';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import {
     Table,
     TableBody,
@@ -18,6 +27,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { format } from 'date-fns';
 import { Appointment, Doctor, Patient } from '@/lib/types';
 
 export default function Home() {
@@ -26,9 +36,41 @@ export default function Home() {
     const [patients, setPatients] = useState<Patient[]>([]);
     const [currentAppointmentsCount, setCurrentAppointmentsCount] = useState<number>(0);
     const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
-    const [completedAppointmentsLastMonth, setCompletedAppointmentsLastMonth] = useState<
-        Appointment[]
-    >([]);
+    const [completedAppointmentsLastMonth, setCompletedAppointmentsLastMonth] = useState<Appointment[]>([]);
+    const [nextMonthAppointments, setNextMonthAppointments] = useState<Appointment[]>([]);
+    const [todaysAppointments, setTodaysAppointments] = useState<Appointment[]>([]);
+    const [selectedView, setSelectedView] = useState<'today' | 'week' | 'month'>('today');
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+
+    const handleViewChange = (view: 'today' | 'week' | 'month') => {
+        setSelectedView(view);
+
+        switch (view) {
+            case 'today':
+                setAppointments(todaysAppointments);
+                break;
+            case 'week':
+                const today = format(new Date(), 'yyyy-MM-dd');
+                const nextWeek = format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
+                setAppointments(nextMonthAppointments.filter((app) => app.date <= nextWeek));
+                break;
+            case 'month':
+                const allAppointments = [
+                    ...nextMonthAppointments,
+                    ...completedAppointmentsLastMonth,
+                ];
+
+                const sortedAppointments = allAppointments.sort((a, b) => {
+                    if (a.date === b.date) {
+                        return a.time.localeCompare(b.time);
+                    }
+                    return a.date.localeCompare(b.date);
+                });
+
+                setAppointments(sortedAppointments);
+                break;
+        }
+    };
 
     const handleDoctorAdded = (doctor: Doctor) => {
         setDoctors((prev) => [...prev, doctor]);
@@ -40,15 +82,66 @@ export default function Home() {
 
     const handleAppointmentAdded = (appointment: Appointment) => {
         setCurrentAppointmentsCount((prev) => prev + 1);
-        setUpcomingAppointments((prev) => {
-            const newAppointments = [...prev, appointment];
-            return newAppointments.sort((a, b) => {
-                if (a.date === b.date) {
-                    return a.time.localeCompare(b.time);
-                }
-                return a.date.localeCompare(b.date);
+        
+        // Update today's appointments if it's for today
+        if (appointment.date === format(new Date(), 'yyyy-MM-dd')) {
+            setTodaysAppointments((prev) => {
+                const newAppointments = [...prev, appointment];
+                return newAppointments.sort((a, b) => a.time.localeCompare(b.time));
             });
-        });
+        }
+
+        // Update next month appointments if it's within the next month
+        const nextMonth = new Date();
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        if (appointment.date <= format(nextMonth, 'yyyy-MM-dd')) {
+            setNextMonthAppointments((prev) => {
+                const newAppointments = [...prev, appointment];
+                return newAppointments.sort((a, b) => {
+                    if (a.date === b.date) {
+                        return a.time.localeCompare(b.time);
+                    }
+                    return a.date.localeCompare(b.date);
+                });
+            });
+        }
+
+        // Update the currently displayed appointments if we're in the relevant view
+        switch (selectedView) {
+            case 'today':
+                if (appointment.date === format(new Date(), 'yyyy-MM-dd')) {
+                    setAppointments((prev) => {
+                        const newAppointments = [...prev, appointment];
+                        return newAppointments.sort((a, b) => a.time.localeCompare(b.time));
+                    });
+                }
+                break;
+            case 'week':
+                const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                if (appointment.date <= format(nextWeek, 'yyyy-MM-dd')) {
+                    setAppointments((prev) => {
+                        const newAppointments = [...prev, appointment];
+                        return newAppointments.sort((a, b) => {
+                            if (a.date === b.date) {
+                                return a.time.localeCompare(b.time);
+                            }
+                            return a.date.localeCompare(b.date);
+                        });
+                    });
+                }
+                break;
+            case 'month':
+                setAppointments((prev) => {
+                    const newAppointments = [...prev, appointment];
+                    return newAppointments.sort((a, b) => {
+                        if (a.date === b.date) {
+                            return a.time.localeCompare(b.time);
+                        }
+                        return a.date.localeCompare(b.date);
+                    });
+                });
+                break;
+        }
     };
 
     const fetchData = async () => {
@@ -60,12 +153,16 @@ export default function Home() {
                 appointmentsCountData,
                 upcomingAppointmentsData,
                 completedAppointmentsData,
+                nextMonthAppointmentsData,
+                todaysAppointmentsData,
             ] = await Promise.all([
                 getDoctors(),
                 getPatients(),
                 getCurrentAppointmentsCount(),
                 getUpcomingWeekAppointments(),
                 getCompletedAppointmentsLastMonth(),
+                getNextMonthAppointments(),
+                getTodaysAppointments(),
             ]);
 
             setDoctors(doctorsData as Doctor[]);
@@ -73,6 +170,8 @@ export default function Home() {
             setCurrentAppointmentsCount(appointmentsCountData.count);
             setUpcomingAppointments(upcomingAppointmentsData as Appointment[]);
             setCompletedAppointmentsLastMonth(completedAppointmentsData as Appointment[]);
+            setNextMonthAppointments(nextMonthAppointmentsData as Appointment[]);
+            setTodaysAppointments(todaysAppointmentsData as Appointment[]);
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -104,7 +203,7 @@ export default function Home() {
 
     return (
         <div className="container flex flex-col mx-auto py-10 w-full flex-4 gap-6">
-            <div className="flex flex-row flex-1 w-full gap-2 justify-between">
+            <div className="flex flex-row flex-1/4 w-full gap-2 justify-between">
                 <Card className="w-1/3">
                     <CardHeader>
                         <CardTitle>Today</CardTitle>
@@ -160,10 +259,25 @@ export default function Home() {
                     </CardContent>
                 </Card>
             </div>
-            <div className="flex flex-row flex-2 w-full gap-8">
-                <Card className="w-1/2">
-                    <CardHeader>
-                        <CardTitle>Available Doctors</CardTitle>
+            <div className="flex flex-row flex-3/4 overflow-scroll w-full gap-8">
+                <Card className="w-full">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Appointments</CardTitle>
+                        <Select
+                            value={selectedView}
+                            onValueChange={(value) =>
+                                handleViewChange(value as 'today' | 'week' | 'month')
+                            }
+                        >
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Select a view" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="today">Today</SelectItem>
+                                <SelectItem value="week">Next 7 Days</SelectItem>
+                                <SelectItem value="month">Next Month</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </CardHeader>
                     <CardContent>
                         {loading ? (
@@ -175,73 +289,39 @@ export default function Home() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Name</TableHead>
-                                            <TableHead>Age</TableHead>
-                                            <TableHead>Specialization</TableHead>
-                                            <TableHead>Phone</TableHead>
-                                            <TableHead>Notes</TableHead>
+                                            <TableHead>Patient</TableHead>
+                                            <TableHead>Doctor</TableHead>
+                                            <TableHead>Date</TableHead>
+                                            <TableHead>Time</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {doctors.length === 0 ? (
+                                        {appointments.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={5} className="h-24 text-center">
-                                                    No doctors available
+                                                <TableCell colSpan={4} className="h-24 text-center">
+                                                    No appointments found
                                                 </TableCell>
                                             </TableRow>
                                         ) : (
-                                            doctors.map((doctor) => (
-                                                <TableRow key={doctor.id}>
-                                                    <TableCell>{doctor.name}</TableCell>
-                                                    <TableCell>{doctor.age}</TableCell>
-                                                    <TableCell>{doctor.specialization}</TableCell>
-                                                    <TableCell>{doctor.phone || '-'}</TableCell>
-                                                    <TableCell>{doctor.notes || '-'}</TableCell>
-                                                </TableRow>
-                                            ))
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-                <Card className="max-w-4xl mx-auto flex-1/2">
-                    <CardHeader>
-                        <CardTitle>Available Patients</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {loading ? (
-                            <div className="flex justify-center items-center h-64">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                            </div>
-                        ) : (
-                            <div className="rounded-md border">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Name</TableHead>
-                                            <TableHead>Age</TableHead>
-                                            <TableHead>Condition</TableHead>
-                                            <TableHead>Phone</TableHead>
-                                            <TableHead>Notes</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {patients.length === 0 ? (
-                                            <TableRow>
-                                                <TableCell colSpan={5} className="h-24 text-center">
-                                                    No patients available
-                                                </TableCell>
-                                            </TableRow>
-                                        ) : (
-                                            patients.map((patient) => (
-                                                <TableRow key={patient.id}>
-                                                    <TableCell>{patient.name}</TableCell>
-                                                    <TableCell>{patient.age}</TableCell>
-                                                    <TableCell>{patient.condition}</TableCell>
-                                                    <TableCell>{patient.phone || '-'}</TableCell>
-                                                    <TableCell>{patient.notes || '-'}</TableCell>
+                                            appointments.map((appointment) => (
+                                                <TableRow key={appointment.id}>
+                                                    <TableCell>
+                                                        {patients.find(
+                                                            (p) => p.id === appointment.patient_id,
+                                                        )?.name || 'Unknown'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {doctors.find(
+                                                            (d) => d.id === appointment.doctor_id,
+                                                        )?.name || 'Unknown'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {format(
+                                                            new Date(appointment.date),
+                                                            'MMM dd, yyyy',
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell>{appointment.time}</TableCell>
                                                 </TableRow>
                                             ))
                                         )}

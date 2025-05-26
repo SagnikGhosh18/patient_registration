@@ -101,32 +101,70 @@ export async function getCurrentAppointmentsCount(): Promise<AppointmentStats> {
 }
 
 export async function getUpcomingWeekAppointments(): Promise<Appointment[]> {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const nextWeekStr = nextWeek.toISOString().split('T')[0];
+
     const query = `SELECT * 
                     FROM appointments 
-                    WHERE date >= to_char(CURRENT_DATE, 'YYYY-MM-DD') 
-                    AND date <= to_char(CURRENT_DATE + INTERVAL '7 days', 'YYYY-MM-DD')
+                    WHERE date::text >= $1 
+                    AND date::text <= $2
                     ORDER BY date, time`;
-    return (await rawQuery(query)).rows;
+    return (await rawQuery(query, [todayStr, nextWeekStr])).rows;
 }
 
 export async function getCompletedAppointmentsLastMonth(): Promise<Appointment[]> {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const lastMonth = new Date(today);
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    const lastMonthStr = lastMonth.toISOString().split('T')[0];
+
     const query = `SELECT * 
                     FROM appointments 
-                    WHERE date >= to_char(CURRENT_DATE - INTERVAL '1 month', 'YYYY-MM-DD')
-                    AND date < to_char(CURRENT_DATE, 'YYYY-MM-DD')
+                    WHERE date::text >= $1 
+                    AND date::text < $2
                     ORDER BY date DESC, time DESC`;
-    return (await rawQuery(query)).rows;
+    return (await rawQuery(query, [lastMonthStr, todayStr])).rows;
+}
+
+export async function getTodaysAppointments(): Promise<Appointment[]> {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    const query = `SELECT * 
+                    FROM appointments 
+                    WHERE date::text = $1
+                    ORDER BY time`;
+    return (await rawQuery(query, [todayStr])).rows;
+}
+
+export async function getNextMonthAppointments(): Promise<Appointment[]> {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const nextMonth = new Date(today);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    const nextMonthStr = nextMonth.toISOString().split('T')[0];
+
+    const query = `SELECT * 
+                    FROM appointments 
+                    WHERE date::text >= $1 
+                    AND date::text <= $2
+                    ORDER BY date, time`;
+    return (await rawQuery(query, [todayStr, nextMonthStr])).rows;
 }
 
 export async function getAppointments() {
     try {
         const db = await getDB();
         const queryResult = await db.query(`
-        SELECT a.*, d.name AS doctor_name, p.name AS patient_name
-        FROM appointments a
-        JOIN doctors d ON a.doctor_id = d.id
-        JOIN patients p ON a.patient_id = p.id
-    `);
+            SELECT a.*, d.name AS doctor_name, p.name AS patient_name
+            FROM appointments a
+            JOIN doctors d ON a.doctor_id = d.id
+            JOIN patients p ON a.patient_id = p.id
+        `);
         return queryResult.rows;
     } catch (err) {
         console.log('GET_APPOINTMENTS: Something went wrong: %o', err);
