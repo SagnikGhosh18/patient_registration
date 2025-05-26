@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { addDoctor, getDoctors } from '@/services/LocalService';
+import { broadcastChannel } from '@/lib/broadcastChannel';
 import { useEffect, useState } from 'react';
 import {
     Table,
@@ -57,15 +58,25 @@ export default function AddDoctorPage() {
 
     useEffect(() => {
         fetchDoctors();
+
+        const unsubscribe = broadcastChannel.subscribe('doctor-added', (newDoctor: any) => {
+            setDoctors(prev => [...prev, newDoctor as Doctor]);
+        });
+
+        return () => unsubscribe();
     }, []);
 
     const onSubmit = async (data: DoctorFormData) => {
         try {
-            await addDoctor(data);
+            setLoading(true);
+            const newDoctor = await addDoctor(data);
             console.log('Doctor added successfully');
+            setDoctors(prev => [...prev, newDoctor as Doctor]);
             reset();
         } catch (error) {
             console.error('Failed to add doctor');
+        } finally {
+            setLoading(false);
         }
     };
 

@@ -1,14 +1,19 @@
 import { getDB } from '@/lib/pgliteClient';
+import { broadcastChannel } from '@/lib/broadcastChannel';
 
 export async function addDoctor(data: any) {
     try {
         const db = await getDB();
         const { name, age, specialization, notes, phone } = data;
         await db.query(
-            `INSERT INTO doctors (name, age, specialization, notes, phone) VALUES ($1, $2, $3, $4, $5)`,
+            `INSERT INTO doctors (name, age, specialization, notes, phone)
+        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
             [name, age, specialization, notes, phone],
         );
-        return true;
+        const result = await db.query('SELECT * FROM doctors ORDER BY id DESC LIMIT 1');
+        const newDoctor = result.rows[0];
+        broadcastChannel.broadcast('doctor-added', newDoctor);
+        return newDoctor;
     } catch (err) {
         console.log('ADD_DOCTOR: Something went wrong: %o', err);
         throw new Error('Failed to add doctor');
@@ -21,10 +26,13 @@ export async function addPatient(data: any) {
         const { name, age, condition, notes, phone } = data;
         await db.query(
             `INSERT INTO patients (name, age, condition, notes, phone)
-        VALUES ($1, $2, $3, $4, $5)`,
+        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
             [name, age, condition, notes, phone],
         );
-        return true;
+        const result = await db.query('SELECT * FROM patients ORDER BY id DESC LIMIT 1');
+        const newPatient = result.rows[0];
+        broadcastChannel.broadcast('patient-added', newPatient);
+        return newPatient;
     } catch (err) {
         console.log('ADD_PATIENT: Something went wrong: %o', err);
         throw new Error('Failed to add patient');
@@ -37,10 +45,13 @@ export async function scheduleAppointment(data: any) {
         const { doctorId, patientId, date, time } = data;
         await db.query(
             `INSERT INTO appointments (doctor_id, patient_id, date, time)
-        VALUES ($1, $2, $3, $4)`,
+        VALUES ($1, $2, $3, $4) RETURNING *`,
             [doctorId, patientId, date, time],
         );
-        return true;
+        const result = await db.query('SELECT * FROM appointments ORDER BY id DESC LIMIT 1');
+        const newAppointment = result.rows[0];
+        broadcastChannel.broadcast('appointment-scheduled', newAppointment);
+        return newAppointment;
     } catch (err) {
         console.log('SCHEDULE_APPOINTMENT: Something went wrong: %o', err);
         throw new Error('Failed to schedule appointment');

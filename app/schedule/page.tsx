@@ -1,6 +1,7 @@
 'use client';
 import { scheduleAppointment, getAppointments } from '@/services/LocalService';
 import { getDoctors, getPatients } from '@/services/LocalService';
+import { broadcastChannel } from '@/lib/broadcastChannel';
 import {
     Table,
     TableBody,
@@ -40,24 +41,42 @@ export default function SchedulePage() {
     const [selectedDate, setSelectedDate] = useState<Date | undefined>();
     const [appointments, setAppointments] = useState<any[]>([]);
 
+    const fetchAllData = async () => {
+        try {
+            const [doctorsData, patientsData, appointmentsData] = await Promise.all([
+                getDoctors(),
+                getPatients(),
+                getAppointments(),
+            ]);
+            setDoctors(doctorsData);
+            setPatients(patientsData);
+            setAppointments(appointmentsData);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchAllData = async () => {
-            try {
-                const [doctorsData, patientsData, appointmentsData] = await Promise.all([
-                    getDoctors(),
-                    getPatients(),
-                    getAppointments(),
-                ]);
-                setDoctors(doctorsData);
-                setPatients(patientsData);
-                setAppointments(appointmentsData);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
+        // Subscribe to broadcast events
+        const unsubscribeDoctor = broadcastChannel.subscribe('doctor-added', (newDoctor: any) => {
+            setDoctors(prev => [...prev, newDoctor as any]);
+        });
+        const unsubscribePatient = broadcastChannel.subscribe('patient-added', (newPatient: any) => {
+            setPatients(prev => [...prev, newPatient as any]);
+        });
+        const unsubscribeAppointment = broadcastChannel.subscribe('appointment-scheduled', (newAppointment: any) => {
+            setAppointments(prev => [...prev, newAppointment as any]);
+        });
+
         fetchAllData();
+
+        return () => {
+            unsubscribeDoctor();
+            unsubscribePatient();
+            unsubscribeAppointment();
+        };
     }, []);
 
     const {
@@ -70,17 +89,21 @@ export default function SchedulePage() {
 
     const onSubmit = async (data: AppointmentFormData) => {
         try {
-            await scheduleAppointment({
+            setLoading(true);
+            const newAppointment = await scheduleAppointment({
                 doctorId: data.doctorId,
                 patientId: data.patientId,
                 date: selectedDate?.toISOString() || new Date().toISOString(),
                 time: data.appointmentTime,
             });
+            console.log('Appointment created successfully');
+            setAppointments(prev => [...prev, newAppointment as any]);
             reset();
             setSelectedDate(undefined);
-            console.log('Appointment created successfully');
         } catch (error) {
             console.error('Failed to create appointment:', error);
+        } finally {
+            setLoading(false);
         }
     };
 

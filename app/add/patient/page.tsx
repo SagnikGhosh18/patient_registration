@@ -2,6 +2,7 @@
 
 import { getPatients } from '@/services/LocalService';
 import { addPatient } from '@/services/LocalService';
+import { broadcastChannel } from '@/lib/broadcastChannel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,13 +59,20 @@ export default function AddPatientPage() {
 
     useEffect(() => {
         fetchPatients();
+
+        const unsubscribe = broadcastChannel.subscribe('patient-added', (newPatient: any) => {
+            setPatients(prev => [...prev, newPatient as Patient]);
+        });
+
+        return () => unsubscribe();
     }, []);
 
     const onSubmit: SubmitHandler<PatientFormData> = async (data) => {
         try {
             setLoading(true);
-            await addPatient(data);
+            const newPatient = await addPatient(data);
             console.log('Patient added successfully');
+            setPatients(prev => [...prev, newPatient as Patient]);
             reset();
         } catch (error) {
             console.error('Error adding patient:', error);
