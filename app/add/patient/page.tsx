@@ -17,23 +17,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-
-interface PatientFormData {
-    name: string;
-    age: number;
-    condition: string;
-    phone: string;
-    notes: string;
-}
-
-interface Patient {
-    id: number;
-    name: string;
-    age: number;
-    condition: string;
-    phone: string;
-    notes: string;
-}
+import { Patient, PatientFormData } from '@/lib/types';
 
 export default function AddPatientPage() {
     const [loading, setLoading] = useState(false);
@@ -61,7 +45,7 @@ export default function AddPatientPage() {
         fetchPatients();
 
         const unsubscribe = broadcastChannel.subscribe('patient-added', (newPatient: any) => {
-            setPatients(prev => [...prev, newPatient as Patient]);
+            setPatients((prev) => [...prev, newPatient as Patient]);
         });
 
         return () => unsubscribe();
@@ -72,7 +56,7 @@ export default function AddPatientPage() {
             setLoading(true);
             const newPatient = await addPatient(data);
             console.log('Patient added successfully');
-            setPatients(prev => [...prev, newPatient as Patient]);
+            setPatients((prev) => [...prev, newPatient as Patient]);
             reset();
         } catch (error) {
             console.error('Error adding patient:', error);

@@ -11,24 +11,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-
-interface Doctor {
-    id: number;
-    name: string;
-    age: number;
-    specialization: string;
-    phone: string;
-    notes: string;
-}
-
-interface Patient {
-    id: number;
-    name: string;
-    age: number;
-    condition: string;
-    phone: string;
-    notes: string;
-}
+import { Doctor, Patient } from '@/lib/types';
 
 export default function Home() {
     const [doctors, setDoctors] = useState<Doctor[]>([]);

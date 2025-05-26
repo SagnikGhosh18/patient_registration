@@ -17,22 +17,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-interface DoctorFormData {
-    name: string;
-    age: number;
-    specialization: string;
-    notes: string;
-    phoneNumber: string;
-}
-
-interface Doctor {
-    id: number;
-    name: string;
-    age: number;
-    specialization: string;
-    phone: string;
-    notes: string;
-}
+import { Doctor, DoctorFormData } from '@/lib/types';
 
 export default function AddDoctorPage() {
     const {
@@ -60,7 +45,7 @@ export default function AddDoctorPage() {
         fetchDoctors();
 
         const unsubscribe = broadcastChannel.subscribe('doctor-added', (newDoctor: any) => {
-            setDoctors(prev => [...prev, newDoctor as Doctor]);
+            setDoctors((prev) => [...prev, newDoctor as Doctor]);
         });
 
         return () => unsubscribe();
@@ -71,7 +56,7 @@ export default function AddDoctorPage() {
             setLoading(true);
             const newDoctor = await addDoctor(data);
             console.log('Doctor added successfully');
-            setDoctors(prev => [...prev, newDoctor as Doctor]);
+            setDoctors((prev) => [...prev, newDoctor as Doctor]);
             reset();
         } catch (error) {
             console.error('Failed to add doctor');

@@ -26,13 +26,7 @@ import { CalendarIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { cn } from '@/lib/utils';
-
-interface AppointmentFormData {
-    patientId: number;
-    doctorId: number;
-    appointmentDate: string;
-    appointmentTime: string;
-}
+import { AppointmentFormData } from '@/lib/types';
 
 export default function SchedulePage() {
     const [doctors, setDoctors] = useState<any[]>([]);
@@ -61,14 +55,20 @@ export default function SchedulePage() {
     useEffect(() => {
         // Subscribe to broadcast events
         const unsubscribeDoctor = broadcastChannel.subscribe('doctor-added', (newDoctor: any) => {
-            setDoctors(prev => [...prev, newDoctor as any]);
+            setDoctors((prev) => [...prev, newDoctor as any]);
         });
-        const unsubscribePatient = broadcastChannel.subscribe('patient-added', (newPatient: any) => {
-            setPatients(prev => [...prev, newPatient as any]);
-        });
-        const unsubscribeAppointment = broadcastChannel.subscribe('appointment-scheduled', (newAppointment: any) => {
-            setAppointments(prev => [...prev, newAppointment as any]);
-        });
+        const unsubscribePatient = broadcastChannel.subscribe(
+            'patient-added',
+            (newPatient: any) => {
+                setPatients((prev) => [...prev, newPatient as any]);
+            },
+        );
+        const unsubscribeAppointment = broadcastChannel.subscribe(
+            'appointment-scheduled',
+            (newAppointment: any) => {
+                setAppointments((prev) => [...prev, newAppointment as any]);
+            },
+        );
 
         fetchAllData();
 
@@ -97,7 +97,7 @@ export default function SchedulePage() {
                 time: data.appointmentTime,
             });
             console.log('Appointment created successfully');
-            setAppointments(prev => [...prev, newAppointment as any]);
+            setAppointments((prev) => [...prev, newAppointment as any]);
             reset();
             setSelectedDate(undefined);
         } catch (error) {
