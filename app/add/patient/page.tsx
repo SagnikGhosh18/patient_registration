@@ -165,7 +165,7 @@ export default function AddPatientPage() {
                             />
                         </div>
 
-                        <Button type="submit" className="w-full" disabled={loading}>
+                        <Button type="submit" disabled={loading}>
                             {loading ? 'Adding...' : 'Add Patient'}
                         </Button>
                     </form>

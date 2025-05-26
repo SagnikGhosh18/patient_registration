@@ -174,9 +174,7 @@ export default function AddDoctorPage() {
                             </div>
                         </div>
 
-                        <Button type="submit" className="w-full">
-                            Add Doctor
-                        </Button>
+                        <Button type="submit">Add Doctor</Button>
                     </form>
                 </CardContent>
             </Card>

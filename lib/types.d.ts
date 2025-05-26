@@ -20,6 +20,7 @@ export interface AppointmentFormData {
     doctorId: number;
     appointmentDate: string;
     appointmentTime: string;
+    notes: string;
 }
 
 export interface PatientFormData {
@@ -49,6 +50,9 @@ export interface Appointment {
     patient_id: number;
     date: string;
     time: string;
+    notes: string;
+    doctor_name: string;
+    patient_name: string;
 }
 
 export interface AppointmentStats {

@@ -43,11 +43,11 @@ export async function addPatient(data: any) {
 export async function scheduleAppointment(data: any) {
     try {
         const db = await getDB();
-        const { doctorId, patientId, date, time } = data;
+        const { doctorId, patientId, date, time, notes } = data;
         await db.query(
-            `INSERT INTO appointments (doctor_id, patient_id, date, time)
-        VALUES ($1, $2, $3, $4) RETURNING *`,
-            [doctorId, patientId, date, time],
+            `INSERT INTO appointments (doctor_id, patient_id, date, time, notes)
+        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+            [doctorId, patientId, date, time, notes],
         );
         const result = await db.query('SELECT * FROM appointments ORDER BY id DESC LIMIT 1');
         const newAppointment = result.rows[0];

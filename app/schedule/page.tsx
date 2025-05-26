@@ -85,6 +85,7 @@ export default function SchedulePage() {
         reset,
         setValue,
         watch,
+        register,
     } = useForm<AppointmentFormData>();
 
     const onSubmit = async (data: AppointmentFormData) => {
@@ -95,6 +96,7 @@ export default function SchedulePage() {
                 patientId: data.patientId,
                 date: selectedDate?.toISOString() || new Date().toISOString(),
                 time: data.appointmentTime,
+                notes: data.notes,
             });
             console.log('Appointment created successfully');
             setAppointments((prev) => [...prev, newAppointment as any]);
@@ -130,7 +132,7 @@ export default function SchedulePage() {
                                         }
                                         defaultValue={watch('patientId')?.toString()}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger className="w-full">
                                             <SelectValue placeholder="Select a patient" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -161,7 +163,7 @@ export default function SchedulePage() {
                                         }
                                         defaultValue={watch('doctorId')?.toString()}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger className="w-full">
                                             <SelectValue placeholder="Select a doctor" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -181,91 +183,93 @@ export default function SchedulePage() {
                                         </p>
                                     )}
                                 </div>
-
-                                <div className="col-span-2">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label
-                                                htmlFor="appointmentDate"
-                                                className="block text-sm font-medium"
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium">Appointment Date</label>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant={'outline'}
+                                                className={cn(
+                                                    'w-full pl-3 text-left font-normal',
+                                                    !selectedDate && 'text-muted-foreground',
+                                                )}
                                             >
-                                                Appointment Date
-                                            </label>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <Button
-                                                        variant={'outline'}
-                                                        className={cn(
-                                                            'w-full justify-start text-left font-normal',
-                                                            !selectedDate &&
-                                                                'text-muted-foreground',
-                                                        )}
-                                                    >
-                                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                                        {selectedDate ? (
-                                                            format(selectedDate, 'PPP')
-                                                        ) : (
-                                                            <span>Pick a date</span>
-                                                        )}
-                                                    </Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent
-                                                    className="w-auto p-0"
-                                                    align="start"
-                                                >
-                                                    <Calendar
-                                                        mode="single"
-                                                        selected={selectedDate}
-                                                        onSelect={setSelectedDate}
-                                                        initialFocus
-                                                    />
-                                                </PopoverContent>
-                                            </Popover>
-                                        </div>
-
-                                        <div>
-                                            <label
-                                                htmlFor="appointmentTime"
-                                                className="block text-sm font-medium"
-                                            >
-                                                Appointment Time
-                                            </label>
-                                            <Select
-                                                onValueChange={(value) =>
-                                                    setValue('appointmentTime', value)
-                                                }
-                                                defaultValue={watch('appointmentTime')}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select time" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {[9, 10, 11, 12, 13, 14, 15, 16, 17].map(
-                                                        (hour) => (
-                                                            <SelectItem
-                                                                key={hour}
-                                                                value={`${hour}:00`}
-                                                            >
-                                                                {hour}:00
-                                                            </SelectItem>
-                                                        ),
-                                                    )}
-                                                </SelectContent>
-                                            </Select>
-                                            {errors.appointmentTime && (
-                                                <p className="mt-1 text-sm text-red-600">
-                                                    {errors.appointmentTime.message}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
+                                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                                {selectedDate ? (
+                                                    format(selectedDate, 'PPP')
+                                                ) : (
+                                                    <span>Pick a date</span>
+                                                )}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                                mode="single"
+                                                selected={selectedDate}
+                                                onSelect={setSelectedDate}
+                                                initialFocus
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                    {errors.appointmentDate && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {errors.appointmentDate.message}
+                                        </p>
+                                    )}
                                 </div>
 
-                                <div className="col-span-2">
-                                    <Button type="submit" className="w-full" disabled={loading}>
-                                        {loading ? 'Creating...' : 'Create Appointment'}
-                                    </Button>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium">Appointment Time</label>
+                                    <Select
+                                        onValueChange={(value) =>
+                                            setValue('appointmentTime', value)
+                                        }
+                                        defaultValue={watch('appointmentTime')}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Select time" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {[
+                                                '09:00',
+                                                '10:00',
+                                                '11:00',
+                                                '12:00',
+                                                '13:00',
+                                                '14:00',
+                                                '15:00',
+                                                '16:00',
+                                                '17:00',
+                                            ].map((time) => (
+                                                <SelectItem key={time} value={time}>
+                                                    {time}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.appointmentTime && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {errors.appointmentTime.message}
+                                        </p>
+                                    )}
                                 </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium">Notes</label>
+                                <textarea
+                                    {...register('notes')}
+                                    className="w-full rounded-md border p-2"
+                                    placeholder="Add any notes about the appointment..."
+                                />
+                            </div>
+
+                            <div className="mt-4">
+                                <Button type="submit" disabled={loading}>
+                                    {loading ? 'Creating...' : 'Schedule Appointment'}
+                                </Button>
                             </div>
                         </form>
                     </CardContent>
@@ -284,6 +288,7 @@ export default function SchedulePage() {
                                         <TableHead>Doctor</TableHead>
                                         <TableHead>Date</TableHead>
                                         <TableHead>Time</TableHead>
+                                        <TableHead>Notes</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -307,6 +312,7 @@ export default function SchedulePage() {
                                                 {new Date(appointment.date).toLocaleDateString()}
                                             </TableCell>
                                             <TableCell>{appointment.time}</TableCell>
+                                            <TableCell>{appointment.notes || '-'}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>

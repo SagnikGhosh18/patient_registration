@@ -287,18 +287,19 @@ export default function Home() {
                         ) : (
                             <div className="rounded-md border">
                                 <Table>
-                                    <TableHeader>
+                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Patient</TableHead>
                                             <TableHead>Doctor</TableHead>
                                             <TableHead>Date</TableHead>
                                             <TableHead>Time</TableHead>
+                                            <TableHead>Notes</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {appointments.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={4} className="h-24 text-center">
+                                                <TableCell colSpan={5} className="h-24 text-center">
                                                     No appointments found
                                                 </TableCell>
                                             </TableRow>
@@ -322,6 +323,7 @@ export default function Home() {
                                                         )}
                                                     </TableCell>
                                                     <TableCell>{appointment.time}</TableCell>
+                                                    <TableCell>{appointment.notes || '-'}</TableCell>
                                                 </TableRow>
                                             ))
                                         )}

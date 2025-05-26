@@ -34,6 +34,7 @@ export async function getDB() {
             patient_id INTEGER,
             date TEXT,
             time TEXT,
+            notes TEXT,
             FOREIGN KEY(doctor_id) REFERENCES doctors(id),
             FOREIGN KEY(patient_id) REFERENCES patients(id)
     );
