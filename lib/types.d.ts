@@ -38,3 +38,19 @@ export interface Patient {
     phone: string;
     notes: string;
 }
+
+export interface RawQueryResult {
+    rows: any[];
+}
+
+export interface Appointment {
+    id: number;
+    doctor_id: number;
+    patient_id: number;
+    date: string;
+    time: string;
+}
+
+export interface AppointmentStats {
+    count: number;
+}

@@ -1,6 +1,13 @@
 'use client';
 
-import { getDoctors, getPatients } from '@/services/LocalService';
+import {
+    getDoctors,
+    getPatients,
+    getCurrentAppointmentsCount,
+    getUpcomingWeekAppointments,
+    getCompletedAppointmentsLastMonth,
+} from '@/services/LocalService';
+import { broadcastChannel } from '@/lib/broadcastChannel';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -11,45 +18,149 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Doctor, Patient } from '@/lib/types';
+import { Appointment, Doctor, Patient } from '@/lib/types';
 
 export default function Home() {
     const [doctors, setDoctors] = useState<Doctor[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [patients, setPatients] = useState<Patient[]>([]);
+    const [currentAppointmentsCount, setCurrentAppointmentsCount] = useState<number>(0);
+    const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
+    const [completedAppointmentsLastMonth, setCompletedAppointmentsLastMonth] = useState<
+        Appointment[]
+    >([]);
 
-    const fetchDoctors = async () => {
-        try {
-            setLoading(true);
-            const data = await getDoctors();
-            setDoctors(data as Doctor[]);
-        } catch (error) {
-            console.error('Error fetching doctors:', error);
-        } finally {
-            setLoading(false);
-        }
+    const handleDoctorAdded = (doctor: Doctor) => {
+        setDoctors((prev) => [...prev, doctor]);
     };
 
-    const fetchPatients = async () => {
+    const handlePatientAdded = (patient: Patient) => {
+        setPatients((prev) => [...prev, patient]);
+    };
+
+    const handleAppointmentAdded = (appointment: Appointment) => {
+        setCurrentAppointmentsCount((prev) => prev + 1);
+        setUpcomingAppointments((prev) => {
+            const newAppointments = [...prev, appointment];
+            return newAppointments.sort((a, b) => {
+                if (a.date === b.date) {
+                    return a.time.localeCompare(b.time);
+                }
+                return a.date.localeCompare(b.date);
+            });
+        });
+    };
+
+    const fetchData = async () => {
         try {
             setLoading(true);
-            const data = await getPatients();
-            setPatients(data as Patient[]);
+            const [
+                doctorsData,
+                patientsData,
+                appointmentsCountData,
+                upcomingAppointmentsData,
+                completedAppointmentsData,
+            ] = await Promise.all([
+                getDoctors(),
+                getPatients(),
+                getCurrentAppointmentsCount(),
+                getUpcomingWeekAppointments(),
+                getCompletedAppointmentsLastMonth(),
+            ]);
+
+            setDoctors(doctorsData as Doctor[]);
+            setPatients(patientsData as Patient[]);
+            setCurrentAppointmentsCount(appointmentsCountData.count);
+            setUpcomingAppointments(upcomingAppointmentsData as Appointment[]);
+            setCompletedAppointmentsLastMonth(completedAppointmentsData as Appointment[]);
         } catch (error) {
-            console.error('Error fetching patients:', error);
+            console.error('Error fetching data:', error);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchDoctors();
-        fetchPatients();
+        const unsubscribeDoctorAdded = broadcastChannel.subscribe(
+            'doctor-added',
+            handleDoctorAdded,
+        );
+        const unsubscribePatientAdded = broadcastChannel.subscribe(
+            'patient-added',
+            handlePatientAdded,
+        );
+        const unsubscribeAppointmentAdded = broadcastChannel.subscribe(
+            'appointment-added',
+            handleAppointmentAdded,
+        );
+        fetchData();
+
+        return () => {
+            unsubscribeDoctorAdded();
+            unsubscribePatientAdded();
+            unsubscribeAppointmentAdded();
+        };
     }, []);
 
     return (
-        <div className="container mx-auto py-10 w-full">
-            <div className="flex flex-row w-full gap-8">
+        <div className="container flex flex-col mx-auto py-10 w-full flex-4 gap-6">
+            <div className="flex flex-row flex-1 w-full gap-2 justify-between">
+                <Card className="w-1/3">
+                    <CardHeader>
+                        <CardTitle>Today</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {loading ? (
+                            <div className="flex justify-center items-center h-64">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            </div>
+                        ) : (
+                            <div>
+                                <p>{currentAppointmentsCount} appointments scheduled today</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+                <Card className="w-1/3">
+                    <CardHeader>
+                        <CardTitle>Next 7 Days</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {loading ? (
+                            <div className="flex justify-center items-center h-64">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            </div>
+                        ) : (
+                            <div>
+                                <p>
+                                    {upcomingAppointments.length} appointments scheduled in the next
+                                    7 days
+                                </p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+                <Card className="w-1/3">
+                    <CardHeader>
+                        <CardTitle>Completed this Month</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {loading ? (
+                            <div className="flex justify-center items-center h-64">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            </div>
+                        ) : (
+                            <div>
+                                <p>
+                                    {completedAppointmentsLastMonth.length} appointments completed
+                                    this month
+                                </p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+            <div className="flex flex-row flex-2 w-full gap-8">
                 <Card className="w-1/2">
                     <CardHeader>
                         <CardTitle>Available Doctors</CardTitle>

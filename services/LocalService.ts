@@ -1,5 +1,6 @@
 import { getDB } from '@/lib/pgliteClient';
 import { broadcastChannel } from '@/lib/broadcastChannel';
+import { Appointment, AppointmentStats, RawQueryResult } from '@/lib/types';
 
 export async function addDoctor(data: any) {
     try {
@@ -78,6 +79,43 @@ export async function getPatients() {
         console.log('GET_PATIENTS: Something went wrong: %o', err);
         throw new Error('Failed to get patients');
     }
+}
+
+export async function rawQuery(query: string, params: any[] = []): Promise<RawQueryResult> {
+    try {
+        const db = await getDB();
+        const result = await db.query(query, params);
+        return result;
+    } catch (err) {
+        console.log('RAW_QUERY: Something went wrong: %o', err);
+        throw new Error('Failed to execute query');
+    }
+}
+
+export async function getCurrentAppointmentsCount(): Promise<AppointmentStats> {
+    const query = `SELECT COUNT(*) as count 
+                    FROM appointments 
+                    WHERE date = to_char(CURRENT_DATE, 'YYYY-MM-DD')`;
+    const result = await rawQuery(query);
+    return result.rows[0];
+}
+
+export async function getUpcomingWeekAppointments(): Promise<Appointment[]> {
+    const query = `SELECT * 
+                    FROM appointments 
+                    WHERE date >= to_char(CURRENT_DATE, 'YYYY-MM-DD') 
+                    AND date <= to_char(CURRENT_DATE + INTERVAL '7 days', 'YYYY-MM-DD')
+                    ORDER BY date, time`;
+    return (await rawQuery(query)).rows;
+}
+
+export async function getCompletedAppointmentsLastMonth(): Promise<Appointment[]> {
+    const query = `SELECT * 
+                    FROM appointments 
+                    WHERE date >= to_char(CURRENT_DATE - INTERVAL '1 month', 'YYYY-MM-DD')
+                    AND date < to_char(CURRENT_DATE, 'YYYY-MM-DD')
+                    ORDER BY date DESC, time DESC`;
+    return (await rawQuery(query)).rows;
 }
 
 export async function getAppointments() {
