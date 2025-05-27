@@ -14,6 +14,45 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion';
+
+const tableSchemas = {
+    doctors: {
+        columns: [
+            { name: 'id', type: 'SERIAL PRIMARY KEY' },
+            { name: 'name', type: 'VARCHAR(255)' },
+            { name: 'age', type: 'INTEGER' },
+            { name: 'specialization', type: 'VARCHAR(255)' },
+            { name: 'notes', type: 'TEXT' },
+            { name: 'phone', type: 'VARCHAR(20)' },
+        ],
+    },
+    patients: {
+        columns: [
+            { name: 'id', type: 'SERIAL PRIMARY KEY' },
+            { name: 'name', type: 'VARCHAR(255)' },
+            { name: 'age', type: 'INTEGER' },
+            { name: 'condition', type: 'VARCHAR(255)' },
+            { name: 'notes', type: 'TEXT' },
+            { name: 'phone', type: 'VARCHAR(20)' },
+        ],
+    },
+    appointments: {
+        columns: [
+            { name: 'id', type: 'SERIAL PRIMARY KEY' },
+            { name: 'doctor_id', type: 'INTEGER REFERENCES doctors(id)' },
+            { name: 'patient_id', type: 'INTEGER REFERENCES patients(id)' },
+            { name: 'appointment_date', type: 'TIMESTAMP' },
+            { name: 'status', type: 'VARCHAR(50)' },
+            { name: 'notes', type: 'TEXT' },
+        ],
+    },
+};
 
 export default function SqlPage() {
     const [loading, setLoading] = useState(false);
@@ -43,7 +82,7 @@ export default function SqlPage() {
     };
 
     return (
-        <div className="container mx-auto py-10 flex flex-col gap-4">
+        <div className="container mx-auto py-10 flex flex-col gap-6">
             <Card>
                 <CardHeader>
                     <CardTitle>Run Raw SQL Query</CardTitle>
@@ -62,6 +101,42 @@ export default function SqlPage() {
                     </form>
                 </CardContent>
             </Card>
+
+            <Accordion type="single" collapsible>
+                <AccordionItem value="item-1">
+                    <AccordionTrigger>Show table schemas</AccordionTrigger>
+                    <AccordionContent>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {Object.entries(tableSchemas).map(([tableName, { columns }]) => (
+                                <Card key={tableName}>
+                                    <CardHeader>
+                                        <CardTitle>
+                                            {tableName.charAt(0).toUpperCase() + tableName.slice(1)}{' '}
+                                            Table
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                {columns.map((column, index) => (
+                                                    <div key={index} className="flex flex-col">
+                                                        <span className="font-medium">
+                                                            {column.name}
+                                                        </span>
+                                                        <span className="text-sm text-gray-600">
+                                                            {column.type}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+            </Accordion>
 
             <Card>
                 <CardHeader>
