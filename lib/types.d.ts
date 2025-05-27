@@ -58,3 +58,7 @@ export interface Appointment {
 export interface AppointmentStats {
     count: number;
 }
+
+export interface SQLQueryForm {
+    query: string;
+}

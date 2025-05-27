@@ -1,4 +1,4 @@
-import { Calendar, Home, Inbox, Settings, UserRoundPlus } from 'lucide-react';
+import { Calendar, DatabaseZap, Home, Inbox, Settings, UserRoundPlus } from 'lucide-react';
 
 import {
     Sidebar,
@@ -31,6 +31,11 @@ const items = [
         title: 'Schedule Appointment',
         url: '/schedule',
         icon: Calendar,
+    },
+    {
+        title: 'Run SQL Query',
+        url: '/sql',
+        icon: DatabaseZap,
     },
     // {
     //     title: 'Settings',
